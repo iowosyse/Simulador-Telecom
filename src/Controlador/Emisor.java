@@ -5,7 +5,10 @@ import Modelo.GestorDeCanales;
 import Modelo.Packet;
 import Modelo.Trama;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform; // <-- AÑADIDO
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert; // <-- AÑADIDO
+import javafx.scene.control.Alert.AlertType; // <-- AÑADIDO
 import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
@@ -26,24 +29,18 @@ public class Emisor {
 
     private Canal canalActual;
 
+    // --- Configuración de la Ventana ---
     private static final int TAMAÑO_VENTANA = 5;
-    private static final Duration TIMEOUT_DURACION = Duration.seconds(5);
+    private static final Duration TIMEOUT_DURACION = Duration.millis(1100);
 
+    // --- Estado de la Transmisión ---
     private List<Packet> tramaPendiente;
     private int ventanaBase = 0;
     private int proximoSeqNum = 0;
 
-    /**
-     * El "Panel de Control de Alarmas".
-     * Almacena un timer activo para cada paquete que está en vuelo.
-     * Clave: sequenceNumber, Valor: El objeto PauseTransition (la "alarma").
-     */
-    private final Map<Integer, PauseTransition> timersActivos = new HashMap<>();
+    private boolean handshakeCompletado = false;
 
-    /**
-     * Almacén de ACKs que han llegado "fuera de orden" dentro de la ventana actual.
-     * Ejemplo: Si recibimos ACK 2 y 3, pero aún no el 0, se guardan aquí.
-     */
+    private final Map<Integer, PauseTransition> timersActivos = new HashMap<>();
     private final Set<Integer> acksRecibidosEnVentana = new HashSet<>();
 
 
@@ -53,7 +50,6 @@ public class Emisor {
                                                  valorViejo,
                                                  valorNuevo)
                 -> sintonizarCanal(valorNuevo.intValue()));
-
         sintonizarCanal((int) sliderCanal.getValue());
     }
 
@@ -61,6 +57,7 @@ public class Emisor {
         if (canalActual != null) {
             canalActual.desconectarEmisor();
         }
+        // Asumiendo que GestorDeCanales.getInstance() es tu método
         canalActual = GestorDeCanales.getInstance().getCanal(id);
         canalActual.conectarEmisor(this);
         System.out.println("Emisor sintonizado en Canal " + id);
@@ -71,38 +68,69 @@ public class Emisor {
      */
     public void enviarPressed() {
         String mensaje = cifrarCesar(txtMensaje.getText(), (int) sliderCifrado.getValue());
-        if (mensaje.isEmpty()) return; // No enviar mensajes vacíos
+        if (mensaje.isEmpty()) return;
 
         byte[] cargaUtilTotal = mensaje.getBytes(StandardCharsets.UTF_8);
 
         int tamañoPayload = 10;
-
         Trama trama = new Trama(cargaUtilTotal, tamañoPayload);
         this.tramaPendiente = trama.getPackets();
 
+        // Resetea todo el estado de la transmisión
         ventanaBase = 0;
         proximoSeqNum = 0;
-        timersActivos.values().forEach(PauseTransition::stop); // Detiene timers viejos
-        timersActivos.clear();
-        acksRecibidosEnVentana.clear();
+        handshakeCompletado = false;
+        abortarTransmision(); // Limpia timers y reactiva el botón
+        enviarBtn.setDisable(true); // Desactívalo de nuevo para este envío
 
-        enviarBtn.setDisable(true);
+        // --- LÓGICA DE HANDSHAKE (MODIFICADA) ---
+        if (tramaPendiente.isEmpty()) {
+            enviarBtn.setDisable(false);
+            return;
+        }
 
-        enviarVentana();
+        Packet headerPacket = tramaPendiente.get(0);
+
+        System.out.println("EMISOR: Iniciando handshake. Enviando Header (seq=" + headerPacket.getSequenceNumber() + ")");
+        if (canalActual != null) {
+
+            // --- ¡COMPROBACIÓN! ---
+            boolean enviadoConExito = canalActual.enviarPaquete(headerPacket);
+
+            if (enviadoConExito) {
+                // El canal aceptó el paquete, iniciar el timer
+                iniciarTimerPara(headerPacket);
+            } else {
+                // ¡FALLO INMEDIATO! No hay receptor.
+                mostrarAlertaError("Error de Envío", "No hay ningún receptor sintonizado en el Canal " + canalActual.getFrecuencia());
+                abortarTransmision(); // Resetea el Emisor
+            }
+        }
     }
 
     /**
      * Envía todos los paquetes nuevos que quepan en la ventana actual.
      */
     private void enviarVentana() {
-        while (proximoSeqNum < tramaPendiente.size() && proximoSeqNum < ventanaBase + TAMAÑO_VENTANA) {
+        while (proximoSeqNum + 1 < tramaPendiente.size() &&
+                proximoSeqNum < ventanaBase + TAMAÑO_VENTANA) {
 
-            Packet paqueteAEnviar = tramaPendiente.get(proximoSeqNum);
+            Packet paqueteAEnviar = tramaPendiente.get(proximoSeqNum + 1);
 
             System.out.println("EMISOR: Enviando paquete seq=" + paqueteAEnviar.getSequenceNumber());
             if (canalActual != null) {
-                canalActual.enviarPaquete(paqueteAEnviar);
-                iniciarTimerPara(paqueteAEnviar);
+
+                // --- ¡COMPROBACIÓN! ---
+                boolean enviadoConExito = canalActual.enviarPaquete(paqueteAEnviar);
+
+                if (enviadoConExito) {
+                    iniciarTimerPara(paqueteAEnviar);
+                } else {
+                    // El receptor debió desconectarse a mitad de la trama.
+                    mostrarAlertaError("Error de Conexión", "Se perdió la conexión con el receptor en el Canal " + canalActual.getFrecuencia());
+                    abortarTransmision();
+                    break; // Salir del bucle 'while'
+                }
             }
             proximoSeqNum++;
         }
@@ -114,17 +142,29 @@ public class Emisor {
     private void iniciarTimerPara(Packet paquete) {
         int seq = paquete.getSequenceNumber();
 
+        if (timersActivos.containsKey(seq)) {
+            return;
+        }
+
         PauseTransition timer = new PauseTransition(TIMEOUT_DURACION);
 
         timer.setOnFinished(e -> {
             System.out.println("EMISOR: ¡TIMEOUT! para seq=" + seq + ". Retransmitiendo...");
-            timersActivos.remove(seq); // Quita esta alarma (ya sonó)
+            timersActivos.remove(seq);
 
             if (canalActual != null) {
-                // Vuelve a enviar el MISMO paquete
-                canalActual.enviarPaquete(paquete);
-                // Inicia una NUEVA alarma para este reintento
-                iniciarTimerPara(paquete);
+
+                // --- ¡COMPROBACIÓN! ---
+                boolean retransmitidoConExito = canalActual.enviarPaquete(paquete);
+
+                if (retransmitidoConExito) {
+                    // Inicia una NUEVA alarma para este reintento
+                    iniciarTimerPara(paquete);
+                } else {
+                    // El receptor se desconectó mientras esperábamos el ACK.
+                    mostrarAlertaError("Error de Conexión", "Se perdió la conexión con el receptor en el Canal " + canalActual.getFrecuencia());
+                    abortarTransmision();
+                }
             }
         });
 
@@ -134,73 +174,114 @@ public class Emisor {
 
     /**
      * Método PÚBLICO que el CANAL llamará cuando un ACK llegue.
-     * Este es el núcleo de la lógica de Repetición Selectiva.
      */
     public void recibirAck(Packet ack) {
-        if (!ack.isAck()) return; // Ignorar si no es un ACK
+        if (!ack.isAck()) return;
 
         int seq = ack.getSequenceNumber();
         System.out.println("EMISOR: Recibido ACK para seq=" + seq);
 
-        // 1. Buscar la alarma correspondiente
         PauseTransition timer = timersActivos.get(seq);
 
-        // 2. Si hay una alarma para él, la desactivamos
         if (timer != null) {
             timer.stop();
-            timersActivos.remove(seq); // Quitarla del panel de control
+            timersActivos.remove(seq);
+        } else {
+            System.out.println("EMISOR: ACK " + seq + " duplicado o inesperado.");
+            if(seq >= 0 && !handshakeCompletado) return;
         }
 
-        // 3. Si el ACK está dentro de la ventana actual...
-        if (seq >= ventanaBase && seq < ventanaBase + TAMAÑO_VENTANA) {
-            // Marcarlo como "recibido"
-            acksRecibidosEnVentana.add(seq);
-
-            // 4. ¡Intentar DESLIZAR la ventana!
-            // Mueve la "base" de la ventana hacia adelante por todos
-            // los paquetes consecutivos que ya han sido confirmados.
-            while (acksRecibidosEnVentana.contains(ventanaBase)) {
-                acksRecibidosEnVentana.remove(ventanaBase); // Quitarlo del set
-                ventanaBase++; // ¡DESLIZA!
-                System.out.println("EMISOR: Ventana deslizada a base=" + ventanaBase);
-            }
-
-            // 5. Enviar nuevos paquetes que ahora caben en la ventana deslizada
+        // CASO A: Es el ACK del Header (seq = -1)
+        if (seq == -1 && !handshakeCompletado) {
+            System.out.println("EMISOR: Handshake completado. Iniciando ráfaga de datos...");
+            handshakeCompletado = true;
             enviarVentana();
         }
+        // CASO B: Es un ACK de un paquete de DATOS (seq >= 0)
+        else if (seq >= 0 && handshakeCompletado) {
+            if (seq >= ventanaBase) {
+                acksRecibidosEnVentana.add(seq);
 
-        // 6. Comprobar si terminamos
-        if (ventanaBase == tramaPendiente.size()) {
+                while (acksRecibidosEnVentana.contains(ventanaBase)) {
+                    acksRecibidosEnVentana.remove(ventanaBase);
+                    ventanaBase++;
+                    System.out.println("EMISOR: Ventana deslizada a base=" + ventanaBase);
+                }
+                enviarVentana();
+            }
+        }
+
+        // Comprobación de finalización
+        int numPaquetesDatos = tramaPendiente.size() - 1;
+        if (handshakeCompletado && ventanaBase == numPaquetesDatos) {
             System.out.println("EMISOR: Trama completa enviada y confirmada.");
-            enviarBtn.setDisable(false); // Reactiva el botón
+            abortarTransmision(); // Limpia todo y reactiva el botón
+            handshakeCompletado = false; // Resetea para la próxima trama
         }
     }
 
+    // --- NUEVOS MÉTODOS HELPER ---
 
     /**
-     * Cifra un texto usando el Cifrado César en un rango extendido (ASCII 32-126).
+     * Muestra una ventana de diálogo de error al usuario.
+     * Debe ejecutarse en el Hilo de Aplicación de JavaFX.
+     */
+    private void mostrarAlertaError(String titulo, String mensaje) {
+        // Asegura que la alerta se muestre en el hilo de UI
+        Platform.runLater(() -> {
+            Alert alerta = new Alert(AlertType.ERROR);
+            alerta.setTitle(titulo);
+            alerta.setHeaderText(null);
+            alerta.setContentText(mensaje);
+
+            // Asigna la ventana "dueña" (la del Emisor) para centrar la alerta
+            if (enviarBtn.getScene() != null) {
+                alerta.initOwner(enviarBtn.getScene().getWindow());
+            }
+
+            alerta.showAndWait();
+        });
+    }
+
+    /**
+     * Detiene todos los timers, limpia el estado y reactiva el botón de envío.
+     */
+    private void abortarTransmision() {
+        timersActivos.values().forEach(PauseTransition::stop);
+        timersActivos.clear();
+        acksRecibidosEnVentana.clear();
+        handshakeCompletado = false;
+        ventanaBase = 0;
+        proximoSeqNum = 0;
+
+        // Asegura que el botón se reactive en el hilo de UI
+        Platform.runLater(() -> {
+            enviarBtn.setDisable(false);
+        });
+
+        System.out.println("EMISOR: Transmisión abortada.");
+    }
+
+    /**
+     * Cifra un texto usando el Cifrado César.
      */
     private String cifrarCesar(String texto, int desplazamiento) {
         StringBuilder textoCifrado = new StringBuilder();
 
         final int asciiInicio = 32;
         final int asciiFinal = 126;
-        final int rango = asciiFinal - asciiInicio + 1; // 95 caracteres
+        final int rango = asciiFinal - asciiInicio + 1;
 
         for (char c : texto.toCharArray()) {
             if (c >= asciiInicio && c <= asciiFinal) {
-
                 int indiceActual = c - asciiInicio;
                 int indiceNuevo = (indiceActual + desplazamiento % rango + rango) % rango;
-
                 char nuevoCaracter = (char) (asciiInicio + indiceNuevo);
                 textoCifrado.append(nuevoCaracter);
-
             } else {
                 textoCifrado.append(c);
             }
         }
-
         return textoCifrado.toString();
     }
 }

@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="275.0" prefWidth="680.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane fx:id="anchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="606.0" prefWidth="797.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controlador.Receptor">
     <children>
         <Label layoutX="567.0" layoutY="75.0">
             <font>
                 <Font name="Lato Regular" size="14.0" />
             </font>
         </Label>
-        <Slider layoutX="195.0" layoutY="93.0" majorTickUnit="1.0" max="6.0" min="1.0" minorTickCount="0" prefHeight="54.0" prefWidth="290.0" rotate="360.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
+        <Slider fx:id="sliderCanal" layoutX="195.0" layoutY="93.0" majorTickUnit="1.0" max="6.0" min="1.0" minorTickCount="0" prefHeight="54.0" prefWidth="290.0" rotate="360.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
         <Label layoutX="313.0" layoutY="24.0" text="Receptor">
             <font>
                 <Font name="Lato Regular" size="14.0" />
@@ -21,6 +23,29 @@
         </Label>
         <Separator layoutX="117.0" layoutY="53.0" prefHeight="3.0" prefWidth="448.0" />
       <Label layoutX="324.0" layoutY="66.0" text="Canal">
+         <font>
+            <Font name="Lato Regular" size="14.0" />
+         </font>
+      </Label>
+      <Pane fx:id="animationPane" layoutX="56.0" layoutY="234.0" prefHeight="216.0" prefWidth="572.0" style="-fx-background-color: #d9d9d9;" />
+      <Label layoutX="58.0" layoutY="198.0" text="Transmisión:">
+         <font>
+            <Font name="Lato Regular" size="14.0" />
+         </font>
+      </Label>
+      <ProgressBar fx:id="barraDeProgreso" layoutX="97.0" layoutY="479.0" prefHeight="21.0" prefWidth="486.0" progress="0.0" />
+      <Pane layoutX="54.0" layoutY="552.0" prefHeight="21.0" prefWidth="572.0" style="-fx-background-color: #d9d9d9;" />
+      <Separator layoutX="25.0" layoutY="180.0" prefHeight="3.0" prefWidth="635.0" />
+      <Label fx:id="lblEstado" layoutX="149.0" layoutY="197.0" text="‎ " />
+      <Slider fx:id="sliderDescifrado" blockIncrement="1.0" layoutX="755.0" layoutY="94.0" majorTickUnit="1.0" max="20.0" min="1.0" minorTickCount="1" orientation="VERTICAL" prefHeight="425.0" prefWidth="17.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
+      <Separator layoutX="696.0" layoutY="29.0" orientation="VERTICAL" prefHeight="533.0" prefWidth="4.0" />
+      <Label layoutX="662.0" layoutY="297.0" rotate="270.0" text="Clave de descifrado">
+         <font>
+            <Font name="Lato Regular" size="14.0" />
+         </font>
+      </Label>
+      <Label fx:id="lblMensajeRecibido" layoutX="74.0" layoutY="552.0" prefHeight="21.0" prefWidth="532.0" />
+      <Label layoutX="57.0" layoutY="519.0" text="Mensaje recibido:">
          <font>
             <Font name="Lato Regular" size="14.0" />
          </font>

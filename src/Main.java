@@ -33,34 +33,18 @@ public class Main extends Application {
         emisor.getIcons().add(iconEmisor);
         emisor.setTitle("Emisor");
 
-        // --- CÓDIGO NUEVO PARA POSICIONAR LAS VENTANAS ---
-
-        // 1. Obtener las dimensiones de la pantalla (descontando la barra de tareas)
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
         double screenWidth = bounds.getWidth();
         double screenHeight = bounds.getHeight();
-
-        // 2. Obtener el tamaño de tus escenas (de tus FXML)
-        //    ¡IMPORTANTE! Tus archivos FXML deben tener un tamaño definido 
-        //    (ej. prefWidth="600" prefHeight="400") para que esto funcione.
         double emisorWidth = sceneEmisor.getWidth();
-
         double receptorWidth = sceneReceptor.getWidth();
-
-        // 3. Calcular las posiciones X objetivo para el *centro*
         double targetCenterX_emisor = screenWidth  / 8.0;
         double targetCenterX_receptor = (screenWidth * 4.0) / 7.0;
-
-        // 4. Calcular la posición Y (las centraré verticalmente)
         double targetCenterY = screenHeight / 2.0;
 
-        // 5. Calcular la posición de la esquina (X, Y) para cada Stage
-        //    Fórmula: PosiciónEsquina = PosiciónCentro - (Tamaño / 2)
         emisor.setX(targetCenterX_emisor - (emisorWidth / 2.0));
 
         receptor.setX(targetCenterX_receptor - (receptorWidth / 2.0));
-
-        // --- FIN DEL CÓDIGO NUEVO ---
 
         receptor.show();
         emisor.show();
