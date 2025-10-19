@@ -34,12 +34,10 @@ public class Main extends Application {
 
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
         double screenWidth = bounds.getWidth();
-        double screenHeight = bounds.getHeight();
         double emisorWidth = sceneEmisor.getWidth();
         double receptorWidth = sceneReceptor.getWidth();
         double targetCenterX_emisor = screenWidth  / 8.0;
         double targetCenterX_receptor = (screenWidth * 4.0) / 7.0;
-        double targetCenterY = screenHeight / 2.0;
 
         emisor.setX(targetCenterX_emisor - (emisorWidth / 2.0));
 

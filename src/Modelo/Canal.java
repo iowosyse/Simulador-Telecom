@@ -28,13 +28,15 @@ public class Canal {
     // --- Parámetros de Simulación ---
     private final Random random = new Random();
     /** Probabilidad de 0.0 (0%) a 1.0 (100%) de que un paquete se pierda. */
-    private static final double PROBABILIDAD_PERDIDA = 0.25; // 25% de pérdida
+    private static final double PROBABILIDAD_PERDIDA = 0.25;
+    /** Probabilidad de que un paquete de DATOS o HEADER se corrompa. */
+    private static final double PROBABILIDAD_CORRUPCION = 0.25;
     /** Delay mínimo antes de que un paquete "aparezca" en el canal. */
-    private static final int LATENCIA_MIN_MS = 100; // 0.1 seg
+    private static final int LATENCIA_MIN_MS = 100;
     /** Delay máximo antes de que un paquete "aparezca" en el canal. */
-    private static final int LATENCIA_MAX_MS = 600; // 0.6 seg
+    private static final int LATENCIA_MAX_MS = 600;
     /** Cuánto tarda (fijo) un paquete en cruzar la pantalla. */
-    private static final int DURACION_VIAJE_MS = 450; // 0.45 seg
+    private static final int DURACION_VIAJE_MS = 450;
 
     public Canal(int frecuencia) {
         this.frecuencia = frecuencia;
@@ -47,7 +49,6 @@ public class Canal {
 
 
     // --- Métodos de Conexión ---
-
     public void conectarEmisor(Emisor emisor) {
         this.emisorConectado = emisor;
         System.out.println("CANAL " + frecuencia + ": Emisor conectado.");
@@ -58,9 +59,6 @@ public class Canal {
         System.out.println("CANAL " + frecuencia + ": Emisor desconectado.");
     }
 
-    /**
-     * El Receptor debe "prestar" su panel de animación al canal.
-     */
     public void conectarReceptor(Receptor receptor, Pane panel) {
         this.receptorConectado = receptor;
         this.panelDeAnimacion = panel;
@@ -69,7 +67,6 @@ public class Canal {
 
     public void desconectarReceptor() {
         this.receptorConectado = null;
-        // Limpia cualquier animación residual del panel
         if (this.panelDeAnimacion != null) {
             this.panelDeAnimacion.getChildren().clear();
         }
@@ -78,36 +75,24 @@ public class Canal {
     }
 
     // --- Motor de Simulación ---
-
-    /**
-     * Envía un paquete al canal.
-     * @return true si el paquete fue aceptado para transmisión (hay un destinatario),
-     * false si fue rechazado (no hay destinatario conectado).
-     */
     public boolean enviarPaquete(Packet paquete) {
-        // --- 1. Verificación de Conexión ---
         if (paquete.isAck()) {
-            // Es un ACK (de Receptor a Emisor)
             if (emisorConectado == null) {
                 System.out.println("CANAL " + frecuencia + ": ACK " + paquete.getSequenceNumber() + " perdido (Emisor desconectado).");
-                return false; // El envío falla
+                return false;
             }
         } else {
-            // Es un paquete de DATOS o HEADER (de Emisor a Receptor)
             if (receptorConectado == null || panelDeAnimacion == null) {
                 System.out.println("CANAL " + frecuencia + ": Paquete " + paquete.getSequenceNumber() + " RECHAZADO (Receptor desconectado).");
-                return false; // El envío falla
+                return false;
             }
         }
 
-        // --- 2. Simulación de Pérdida ---
         if (random.nextDouble() < PROBABILIDAD_PERDIDA) {
             System.out.println("CANAL " + frecuencia + ": ¡PAQUETE " + paquete.getSequenceNumber() + " PERDIDO! (simulado)");
-            // El paquete se "acepta" pero se pierde. El Emisor no sabe.
             return true;
         }
 
-        // --- 3. Simulación de Desorden (Latencia Aleatoria) ---
         int latencia = LATENCIA_MIN_MS + random.nextInt(LATENCIA_MAX_MS - LATENCIA_MIN_MS);
         PauseTransition delay = new PauseTransition(Duration.millis(latencia));
 
@@ -116,23 +101,33 @@ public class Canal {
         });
         delay.play();
 
-        return true; // El envío fue "aceptado"
+        return true;
     }
 
     /**
      * Helper privado para crear y ejecutar la animación visual.
      */
     private void iniciarAnimacion(Packet paquete) {
+        // La decisión de corrupción se toma ANTES de dibujar
+        final boolean seCorrompera = !paquete.isAck() && random.nextDouble() < PROBABILIDAD_CORRUPCION;
+
         Platform.runLater(() -> {
-            // Evita animar si el panel se desconectó mientras esperaba la latencia
             if (panelDeAnimacion == null) return;
 
-            Circle visual = new Circle(14, paquete.isAck() ? Color.rgb(74, 255, 166) :
-                    Color.rgb(97, 190, 253));
+            // 1. Elegir color basado en el estado
+            Color colorPaquete;
+            if (paquete.isAck()) {
+                colorPaquete = Color.rgb(74, 255, 166); // Verde (ACK)
+            } else if (seCorrompera) {
+                colorPaquete = Color.rgb(255, 87, 87); // Rojo (CORRUPTO)
+            } else {
+                colorPaquete = Color.rgb(97, 190, 253); // Azul (Datos OK)
+            }
+
+            Circle visual = new Circle(14, colorPaquete);
             visual.setStroke(Color.BLACK);
 
             double startX, endX;
-
             if (paquete.isAck()) {
                 startX = panelDeAnimacion.getWidth() - 20;
                 endX = 20;
@@ -147,13 +142,13 @@ public class Canal {
             panelDeAnimacion.getChildren().add(visual);
 
             TranslateTransition tt = new TranslateTransition(Duration.millis(DURACION_VIAJE_MS), visual);
-            tt.setToX(endX - startX); // Movimiento relativo a su posición inicial
+            tt.setToX(endX - startX);
 
             tt.setOnFinished(event -> {
                 if (panelDeAnimacion != null) {
                     panelDeAnimacion.getChildren().remove(visual);
                 }
-                entregarPaquete(paquete);
+                entregarPaquete(paquete, seCorrompera);
             });
 
             tt.play();
@@ -161,22 +156,54 @@ public class Canal {
     }
 
     /**
-     * Helper privado para entregar lógicamente el paquete al destinatario.
+     * Simula ruido volteando un bit aleatorio en el payload.
+     * ADVERTENCIA: Esto modifica el objeto Packet.
      */
-    private void entregarPaquete(Packet paquete) {
-        if (paquete.isAck()) {
+    private void corromperPaquete(Packet p) {
+        byte[] payload = p.getPayload();
+        if (payload != null && payload.length > 0) {
+            int byteIndex = random.nextInt(payload.length);
+            int bitIndex = random.nextInt(8);
+            payload[byteIndex] = (byte) (payload[byteIndex] ^ (1 << bitIndex));
+            System.out.println("CANAL " + frecuencia + ": Bit-flip en byte " + byteIndex);
+        }
+    }
+
+    /**
+     * Helper privado para entregar lógicamente el paquete al destinatario.
+     * @param paqueteOriginal El paquete *original* (limpio) del Emisor.
+     * @param seCorrompera La decisión tomada en iniciarAnimacion.
+     */
+    private void entregarPaquete(Packet paqueteOriginal, boolean seCorrompera) { // <-- MODIFICADO
+
+        // --- LÓGICA DE CLONACIÓN ---
+        Packet paqueteADeliverar;
+        if (seCorrompera) {
+            System.out.println("CANAL " + frecuencia + ": ¡PAQUETE " + paqueteOriginal.getSequenceNumber() + " CORRUPTO! (simulado)");
+            // 1. Crea un clon
+            paqueteADeliverar = new Packet(paqueteOriginal);
+            // 2. Corrompe el clon
+            corromperPaquete(paqueteADeliverar);
+        } else {
+            // 3. El paquete está limpio, se entrega el original
+            paqueteADeliverar = paqueteOriginal;
+        }
+        // -------------------------
+
+        if (paqueteADeliverar.isAck()) {
             if (emisorConectado != null) {
-                System.out.println("CANAL " + frecuencia + ": Entregando ACK " + paquete.getSequenceNumber() + " al Emisor.");
-                emisorConectado.recibirAck(paquete);
+                System.out.println("CANAL " + frecuencia + ": Entregando ACK " + paqueteADeliverar.getSequenceNumber() + " al Emisor.");
+                emisorConectado.recibirAck(paqueteADeliverar);
             }
         } else {
             if (receptorConectado != null) {
-                if (paquete.isHeader()) {
+                if (paqueteADeliverar.isHeader()) {
                     System.out.println("CANAL " + frecuencia + ": Entregando HEADER al Receptor.");
                 } else {
-                    System.out.println("CANAL " + frecuencia + ": Entregando Paquete " + paquete.getSequenceNumber() + " al Receptor.");
+                    System.out.println("CANAL " + frecuencia + ": Entregando Paquete " + paqueteADeliverar.getSequenceNumber() + " al Receptor.");
                 }
-                receptorConectado.recibirPaquete(paquete);
+                // Entrega el clon corrupto o el original limpio
+                receptorConectado.recibirPaquete(paqueteADeliverar);
             }
         }
     }

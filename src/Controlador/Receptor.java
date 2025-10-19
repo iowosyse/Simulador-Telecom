@@ -69,6 +69,11 @@ public class Receptor {
     public void recibirPaquete(Packet paquete) {
         if (paquete.isAck()) return;
 
+        if (paquete.isCorrupt()) {
+            System.out.println("RECEPTOR: Paquete " + paquete.getSequenceNumber() + " corrupto. Descartando.");
+            return;
+        }
+
         if (paquete.isHeader()) {
             resetearEstadoRecepcion();
             totalPaquetesEsperados = paquete.getTotalPacketsFromHeader();
