@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="280.0" prefWidth="680.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controlador.Emisor">
+    <children>
+        <Label layoutX="39.0" layoutY="99.0" text="Ingresa el mensaje:">
+            <font>
+                <Font name="Lato Regular" size="14.0" />
+            </font></Label>
+        <TextField fx:id="txtMensaje" layoutX="31.0" layoutY="133.0" prefHeight="31.0" prefWidth="351.0" />
+        <Button fx:id="enviarBtn" defaultButton="true" layoutX="191.0" layoutY="93.0" mnemonicParsing="false" onAction="#enviarPressed" prefHeight="30.0" prefWidth="190.0" text="Enviar" textAlignment="JUSTIFY">
+            <font>
+                <Font name="Lato Regular" size="14.0" />
+            </font>
+        </Button>
+        <Slider fx:id="sliderCifrado" blockIncrement="1.0" layoutX="411.0" layoutY="140.0" majorTickUnit="11.0" max="94.0" min="1.0" minorTickCount="6" prefHeight="17.0" prefWidth="240.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
+        <Label layoutX="421.0" layoutY="98.0" prefHeight="20.0" prefWidth="223.0" text="Cifrado césar:" textAlignment="CENTER" />
+        <Label layoutX="323.0" layoutY="182.0" text="Canal">
+            <font>
+                <Font name="Lato Regular" size="14.0" />
+            </font>
+        </Label>
+        <Slider fx:id="sliderCanal" layoutX="210.0" layoutY="210.0" majorTickUnit="1.0" max="6.0" min="1.0" minorTickCount="0" prefHeight="17.0" prefWidth="261.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
+        <Label layoutX="319.0" layoutY="14.0" text="Emisor">
+            <font>
+                <Font name="Lato Regular" size="14.0" />
+            </font>
+        </Label>
+        <Separator layoutX="117.0" layoutY="53.0" prefHeight="3.0" prefWidth="448.0" />
+    </children>
+</AnchorPane>

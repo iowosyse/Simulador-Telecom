@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="275.0" prefWidth="680.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <Label layoutX="567.0" layoutY="75.0">
+            <font>
+                <Font name="Lato Regular" size="14.0" />
+            </font>
+        </Label>
+        <Slider layoutX="195.0" layoutY="93.0" majorTickUnit="1.0" max="6.0" min="1.0" minorTickCount="0" prefHeight="54.0" prefWidth="290.0" rotate="360.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
+        <Label layoutX="313.0" layoutY="24.0" text="Receptor">
+            <font>
+                <Font name="Lato Regular" size="14.0" />
+            </font>
+        </Label>
+        <Separator layoutX="117.0" layoutY="53.0" prefHeight="3.0" prefWidth="448.0" />
+      <Label layoutX="324.0" layoutY="66.0" text="Canal">
+         <font>
+            <Font name="Lato Regular" size="14.0" />
+         </font>
+      </Label>
+    </children>
+</AnchorPane>
