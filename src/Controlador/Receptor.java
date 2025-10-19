@@ -19,11 +19,10 @@ public class Receptor {
     @FXML Pane anchorPane;
     @FXML Pane animationPane;
 
-    // --- NUEVOS ELEMENTOS DE UI ---
-    @FXML private Slider sliderDescifrado; // ¡NUEVO! El slider para la clave
+    @FXML private Slider sliderDescifrado;
     @FXML private ProgressBar barraDeProgreso;
     @FXML private Label lblMensajeRecibido;
-    @FXML private Label lblEstado; // (Opcional) Un label para dar feedback
+    @FXML private Label lblEstado;
 
     private Canal canalActual;
 
@@ -64,13 +63,12 @@ public class Receptor {
     }
 
     /**
-     * ¡MÉTODO PRINCIPAL DE RECEPCIÓN!
+     * MÉTODO PRINCIPAL DE RECEPCIÓN
      * Llamado por la clase Canal.
      */
     public void recibirPaquete(Packet paquete) {
-        if (paquete.isAck()) return; // El Receptor ignora ACKs
+        if (paquete.isAck()) return;
 
-        // --- 1. ¿ES UN PAQUETE DE CABECERA? ---
         if (paquete.isHeader()) {
             resetearEstadoRecepcion();
             totalPaquetesEsperados = paquete.getTotalPacketsFromHeader();
@@ -79,20 +77,18 @@ public class Receptor {
             return;
         }
 
-        // --- 2. ES UN PAQUETE DE DATOS ---
-        if (totalPaquetesEsperados == 0) return; // Ignorar si no hubo header
+        if (totalPaquetesEsperados == 0) return;
 
         int seq = paquete.getSequenceNumber();
-        enviarAck(seq); // Enviar ACK para este paquete
+        enviarAck(seq);
 
         if (seq < proximoPaqueteEsperado || payloadOrdenado.containsKey(seq)) {
             // Duplicado, ignorar
         }
         else if (seq == proximoPaqueteEsperado) {
-            // En orden
             payloadOrdenado.put(seq, paquete.getPayload());
             proximoPaqueteEsperado++;
-            revisarBuffer(); // Revisa el búfer por si ya teníamos los siguientes
+            revisarBuffer();
         }
         else { // seq > proximoPaqueteEsperado
             // Fuera de orden
@@ -123,11 +119,8 @@ public class Receptor {
             bufferFinal.put(payload);
         }
 
-        // Convierte el array final de bytes de vuelta a un String (aún cifrado)
         String mensajeCifrado = new String(bufferFinal.array(), StandardCharsets.UTF_8).trim();
 
-        // --- ¡NUEVA LÓGICA DE DESCIFRADO! ---
-        // Lee la clave (desplazamiento) desde el slider del RECEPTOR
         int claveDescifrado = (int) sliderDescifrado.getValue();
 
         // Descifra el mensaje

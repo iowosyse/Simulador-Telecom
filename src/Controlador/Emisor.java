@@ -31,7 +31,7 @@ public class Emisor {
 
     // --- Configuración de la Ventana ---
     private static final int TAMAÑO_VENTANA = 5;
-    private static final Duration TIMEOUT_DURACION = Duration.millis(1100);
+    private static final Duration TIMEOUT_DURACION = Duration.millis(2101);
 
     // --- Estado de la Transmisión ---
     private List<Packet> tramaPendiente;
@@ -81,7 +81,7 @@ public class Emisor {
         proximoSeqNum = 0;
         handshakeCompletado = false;
         abortarTransmision(); // Limpia timers y reactiva el botón
-        enviarBtn.setDisable(true); // Desactívalo de nuevo para este envío
+        enviarBtn.setDisable(true);
 
         // --- LÓGICA DE HANDSHAKE (MODIFICADA) ---
         if (tramaPendiente.isEmpty()) {
@@ -219,8 +219,6 @@ public class Emisor {
             handshakeCompletado = false; // Resetea para la próxima trama
         }
     }
-
-    // --- NUEVOS MÉTODOS HELPER ---
 
     /**
      * Muestra una ventana de diálogo de error al usuario.

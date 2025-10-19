@@ -41,8 +41,6 @@ public class Canal {
         System.out.println("CANAL " + frecuencia + ": Creado.");
     }
 
-    // --- NUEVO ---
-    /** Devuelve el ID de este canal. */
     public int getFrecuencia() {
         return this.frecuencia;
     }

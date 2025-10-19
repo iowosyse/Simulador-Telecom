@@ -16,7 +16,6 @@ public class Main extends Application {
 
     @Override
     public void start(Stage emisor) throws Exception {
-        // --- Tu código existente (cargando FXML y escenas) ---
         Parent rootEmisor = FXMLLoader.load(Objects.requireNonNull(Main.class.getResource("Vista/EmisorPage.fxml")));
         Scene sceneEmisor = new Scene(rootEmisor);
         Image iconEmisor = new Image("Vista/Iconos/iconEmisor.png");
