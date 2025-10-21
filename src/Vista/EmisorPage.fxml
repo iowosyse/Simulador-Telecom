@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="280.0" prefWidth="754.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controlador.Emisor">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="287.0" prefWidth="754.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controlador.Emisor">
     <children>
         <Label layoutX="39.0" layoutY="99.0" text="Ingresa el mensaje:">
             <font>
@@ -22,17 +22,17 @@
         </Button>
         <Slider fx:id="sliderCifrado" blockIncrement="1.0" layoutX="411.0" layoutY="140.0" majorTickUnit="1.0" max="20.0" min="1.0" minorTickCount="1" prefHeight="42.0" prefWidth="331.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
         <Label contentDisplay="CENTER" layoutX="526.0" layoutY="107.0" prefHeight="20.0" prefWidth="91.0" text="Cifrado césar:" textAlignment="CENTER" />
-        <Label layoutX="375.0" layoutY="182.0" text="Canal">
+        <Label layoutX="358.0" layoutY="182.0" text="Canal">
             <font>
                 <Font name="Lato Regular" size="14.0" />
             </font>
         </Label>
-        <Slider fx:id="sliderCanal" layoutX="261.0" layoutY="224.0" majorTickUnit="1.0" max="6.0" min="1.0" minorTickCount="0" prefHeight="17.0" prefWidth="261.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
-        <Label layoutX="370.0" layoutY="25.0" text="Emisor">
+        <Slider fx:id="sliderCanal" layoutX="245.0" layoutY="218.0" majorTickUnit="1.0" max="6.0" min="1.0" minorTickCount="0" prefHeight="17.0" prefWidth="261.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="1.0" />
+        <Label layoutX="354.0" layoutY="26.0" text="Emisor">
             <font>
                 <Font name="Lato Regular" size="14.0" />
             </font>
         </Label>
-        <Separator layoutX="168.0" layoutY="60.0" prefHeight="3.0" prefWidth="448.0" />
+        <Separator layoutX="151.0" layoutY="59.0" prefHeight="3.0" prefWidth="448.0" />
     </children>
 </AnchorPane>
