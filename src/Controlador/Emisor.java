@@ -30,7 +30,7 @@ public class Emisor {
     private Canal canalActual;
 
     // --- Configuración de la Ventana ---
-    private static final int TAMAÑO_VENTANA = 5;
+    private static final int TAMAÑO_VENTANA = 3;
     private static final Duration TIMEOUT_DURACION = Duration.millis(2101);
 
     // --- Estado de la Transmisión ---
@@ -57,7 +57,6 @@ public class Emisor {
         if (canalActual != null) {
             canalActual.desconectarEmisor();
         }
-        // Asumiendo que GestorDeCanales.getInstance() es tu método
         canalActual = GestorDeCanales.getInstance().getCanal(id);
         canalActual.conectarEmisor(this);
         System.out.println("Emisor sintonizado en Canal " + id);
@@ -158,7 +157,6 @@ public class Emisor {
                 boolean retransmitidoConExito = canalActual.enviarPaquete(paquete);
 
                 if (retransmitidoConExito) {
-                    // Inicia una NUEVA alarma para este reintento
                     iniciarTimerPara(paquete);
                 } else {
                     // El receptor se desconectó mientras esperábamos el ACK.
